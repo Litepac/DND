@@ -3,6 +3,9 @@ DND afleveringer/ Projekter
 
 Gruppe bestående af:
 Oliver Rolighed
-Oliver Hyllested
+
+Oliver Hyllested (olihylle)
+
 Sebastian Højland
-Rasmus Møller
+
+Rasmus Møller (Litepac)
