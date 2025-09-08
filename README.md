@@ -5,7 +5,7 @@ Gruppe bestående af:
 
 Oliver Rolighed (OliRolig)
 
-Oliver Hyllested (olihylle)
+Oliver Hyllested (Olihylle)
 
 Sebastian Højland (Sebastianhoejland)
 
