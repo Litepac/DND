@@ -1,5 +1,5 @@
 # DND
-DND afleveringer/ Projekter
+DND Projekt
 
 Gruppe bestående af:
 
