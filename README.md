@@ -1,4 +1,3 @@
-# DND
 DND Projekt
 
 Gruppe bestående af:
