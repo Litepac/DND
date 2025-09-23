@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNDProject.Api", "DNDProjec
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNDProject", "DNDProject\DNDProject.csproj", "{70D676DD-12E5-4033-BFDE-70415458F560}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNDProject.Web", "DNDProject.Web\DNDProject.Web.csproj", "{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{70D676DD-12E5-4033-BFDE-70415458F560}.Release|x64.Build.0 = Release|Any CPU
 		{70D676DD-12E5-4033-BFDE-70415458F560}.Release|x86.ActiveCfg = Release|Any CPU
 		{70D676DD-12E5-4033-BFDE-70415458F560}.Release|x86.Build.0 = Release|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Debug|x64.Build.0 = Debug|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Debug|x86.Build.0 = Debug|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Release|x64.ActiveCfg = Release|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Release|x64.Build.0 = Release|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Release|x86.ActiveCfg = Release|Any CPU
+		{B8FCE03F-F9F9-4BA8-9723-A63C3A21B965}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
