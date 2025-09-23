@@ -2,4 +2,4 @@
 
 ## Mandag D 22/09
 
-- snakket om requirements
+snakket om requirements
