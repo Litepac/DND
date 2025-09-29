@@ -9,7 +9,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // HttpClient der peger på dit API (brug din egen port fra Swagger)
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("https://localhost:5230/") // ← skift til din API-port
+    BaseAddress = new Uri("https://localhost:5122/") // ← skift til din API-port
 });
 
 await builder.Build().RunAsync();

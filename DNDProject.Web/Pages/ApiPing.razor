@@ -1,5 +1,6 @@
 @page "/api-ping"
 @inject HttpClient Http
+@using System.Net.Http.Json
 
 <h3>API Ping</h3>
 
@@ -17,8 +18,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var list = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers");
-        count = list?.Count ?? 0;
+        try
+        {
+            var list = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers");
+            count = list?.Count ?? 0;
+        }
+        catch
+        {
+            count = -1;
+        }
     }
 
     public record ContainerDto(
