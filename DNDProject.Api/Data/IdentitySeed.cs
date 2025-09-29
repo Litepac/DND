@@ -16,7 +16,6 @@ public static class IdentitySeed
         var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // (valgfrit, men rart i demo) Sørg for at der findes en Customer med Id=1
         if (!await db.Customers.AnyAsync(c => c.Id == 1))
         {
             db.Customers.Add(new Customer { Id = 1, Name = "Demo-kunde" });

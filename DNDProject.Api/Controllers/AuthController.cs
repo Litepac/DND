@@ -69,7 +69,6 @@ public class AuthController : ControllerBase
 
 
     // ---------- Helper: byg JWT ----------
-    // find denne i AuthController.cs og slet den gamle version
     private async Task<(string token, DateTime expires, IEnumerable<string> roles, int? customerId)>
         CreateJwtAsync(ApplicationUser user)
     {
