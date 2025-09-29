@@ -13,12 +13,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(b);
 
-        // Simple constraints
         b.Entity<Container>()
             .Property(x => x.Type)
             .HasMaxLength(100);
 
-        // Seed data så du kan se noget i Swagger med det samme
+        // Seed: to containere så du kan se noget i Swagger
         b.Entity<Container>().HasData(
             new Container
             {
