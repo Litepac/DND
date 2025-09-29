@@ -78,4 +78,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+await IdentitySeed.SeedAsync(app.Services);
 app.Run();
