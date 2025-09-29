@@ -1,19 +1,20 @@
 using DNDProject.Api.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DNDProject.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser> // <— ændret her
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<Container>    Containers   => Set<Container>();
-    public DbSet<Customer>     Customers    => Set<Customer>();
-    public DbSet<PickupEvent>  PickupEvents => Set<PickupEvent>();
+    public DbSet<Container>   Containers   => Set<Container>();
+    public DbSet<Customer>    Customers    => Set<Customer>();
+    public DbSet<PickupEvent> PickupEvents => Set<PickupEvent>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
-        base.OnModelCreating(b);
+        base.OnModelCreating(b); // <— vigtigt for Identity
 
         // Container
         b.Entity<Container>()
