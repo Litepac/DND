@@ -1,0 +1,61 @@
+@page "/containers"
+@inject HttpClient Http
+@using System.Net.Http.Json
+
+<h3>Containers</h3>
+
+@if (items is null)
+{
+    <p>Henter data…</p>
+}
+else if (items.Count == 0)
+{
+    <p>Ingen containere.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Type</th>
+                <th>Materiale</th>
+                <th>Størrelse (L)</th>
+                <th>Ugentlig (kg)</th>
+                <th>Seneste fyld%</th>
+                <th>Foreslået frekvens (dage)</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in items)
+        {
+            <tr>
+                <td>@c.Id</td>
+                <td>@c.Type</td>
+                <td>@MaterialLabel(c.Material)</td>
+                <td>@c.SizeLiters</td>
+                <td>@c.WeeklyAmountKg</td>
+                <td>@(c.LastFillPct?.ToString("0") ?? "-")</td>
+                <td>@(c.PreferredPickupFrequencyDays?.ToString() ?? "–")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<ContainerDto>? items;
+
+    // VIGTIGT: Material er int (matcher API'ets enum-værdi 1/2)
+    public record ContainerDto(
+        int Id, string Type, int SizeLiters, double WeeklyAmountKg,
+        double? LastFillPct, DateTime? LastPickupDate,
+        int? PreferredPickupFrequencyDays, int? CustomerId, int Material);
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers") ?? new();
+    }
+
+    static string MaterialLabel(int m) => m switch { 1 => "Plast", 2 => "Jern", _ => m.ToString() };
+}
