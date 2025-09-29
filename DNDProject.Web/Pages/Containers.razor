@@ -62,7 +62,7 @@ else
                 <th>Ugentlig (kg)</th>
                 <th>Seneste fyld%</th>
                 <th>Anbefaling (dage)</th>
-                <th style="width:160px"></th>
+                <th style="width:200px"></th>
             </tr>
         </thead>
         <tbody>
@@ -100,6 +100,10 @@ else
                     <td>@(c.LastFillPct?.ToString("0") ?? "-")</td>
                     <td>@RecText(c.Id)</td>
                     <td>
+                        <NavLink class="btn btn-sm btn-outline-primary me-1"
+                                 href=@($"/containers/{c.Id}/history")>
+                            Historik
+                        </NavLink>
                         <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => BeginEdit(c)">Redigér</button>
                         <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(c.Id)">Slet</button>
                     </td>
@@ -114,7 +118,7 @@ else
     List<ContainerDto>? items;
     Dictionary<int, RecDto> recs = new();
 
-    // Positional records matcher API'ets JSON (Material = int enumværdi)
+    // DTO'er (matcher API)
     public record ContainerDto(
         int Id, string Type, int SizeLiters, double WeeklyAmountKg,
         double? LastFillPct, DateTime? LastPickupDate,
@@ -208,7 +212,6 @@ else
         var res = await Http.PutAsJsonAsync($"api/containers/{editingId}", edit);
         if (res.IsSuccessStatusCode)
         {
-            // opdatér i listen uden reload
             var i = items!.FindIndex(x => x.Id == editingId);
             if (i >= 0)
             {
@@ -222,8 +225,6 @@ else
                     PreferredPickupFrequencyDays = edit.PreferredPickupFrequencyDays
                 };
             }
-
-            // hent ny anbefaling for den redigerede
             var r = await Http.GetFromJsonAsync<RecDto>($"api/containers/{editingId}/recommendation");
             if (r is not null) recs[editingId.Value] = r;
 
@@ -247,6 +248,11 @@ else
             if (item is not null) items!.Remove(item);
             recs.Remove(id);
             StateHasChanged();
+        }
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"Delete failed: {res.StatusCode} - {txt}");
         }
     }
 

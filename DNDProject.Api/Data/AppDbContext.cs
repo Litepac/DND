@@ -7,17 +7,36 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<Container> Containers => Set<Container>();
+    public DbSet<Container>    Containers   => Set<Container>();
+    public DbSet<Customer>     Customers    => Set<Customer>();
+    public DbSet<PickupEvent>  PickupEvents => Set<PickupEvent>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
 
+        // Container
         b.Entity<Container>()
-            .Property(x => x.Type)
-            .HasMaxLength(100);
+            .Property(x => x.Type).HasMaxLength(100);
 
-        // Seed: to containere så du kan se noget i Swagger
+        // Container -> Customer (valgfrit, kan være null)
+        b.Entity<Container>()
+            .HasOne<Customer>()
+            .WithMany(c => c.Containers)
+            .HasForeignKey(c => c.CustomerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // PickupEvent (historik)
+        b.Entity<PickupEvent>()
+            .HasIndex(x => new { x.ContainerId, x.Timestamp });
+
+        b.Entity<PickupEvent>()
+            .HasOne(e => e.Container)
+            .WithMany() // vi holder events “udenfor” Container-klassen for nu
+            .HasForeignKey(e => e.ContainerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Seed: containere (som du havde)
         b.Entity<Container>().HasData(
             new Container
             {
@@ -39,6 +58,14 @@ public class AppDbContext : DbContext
                 LastFillPct = 46,
                 PreferredPickupFrequencyDays = 21
             }
+        );
+
+        // Lille seed af historik (så du har noget at se)
+        var now = DateTime.UtcNow.Date;
+        b.Entity<PickupEvent>().HasData(
+            new PickupEvent { Id = 1, ContainerId = 1, Timestamp = now.AddDays(-21), FillPct = 88, WeightKg = 110 },
+            new PickupEvent { Id = 2, ContainerId = 1, Timestamp = now.AddDays(-7),  FillPct = 92, WeightKg = 125 },
+            new PickupEvent { Id = 3, ContainerId = 2, Timestamp = now.AddDays(-14), FillPct = 51, WeightKg = 480 }
         );
     }
 }
