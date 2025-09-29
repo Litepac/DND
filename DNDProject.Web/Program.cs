@@ -6,10 +6,10 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// HttpClient der peger på dit API (brug din egen port fra Swagger)
+// Peg på API'et (brug din API-port)
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("https://localhost:5122/") // ← skift til din API-port
+    BaseAddress = new Uri("http://localhost:5230/")
 });
 
 await builder.Build().RunAsync();
