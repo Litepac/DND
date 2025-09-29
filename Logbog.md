@@ -11,4 +11,4 @@ Implementeret blazor osv
 ## Mandag D. 29/09
 
 Møde om webservices.
-
+Sat containers op, CURS op, testet ApiPing og diverse andre ting.

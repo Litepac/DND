@@ -1,8 +1,45 @@
 @page "/containers"
 @inject HttpClient Http
 @using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
 
 <h3>Containers</h3>
+
+<!-- Opret ny container -->
+<EditForm Model="@newItem" OnValidSubmit="CreateAsync" class="mb-4">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row g-2">
+        <div class="col-md-3">
+            <label>Type</label>
+            <InputText class="form-control" @bind-Value="newItem.Type" />
+        </div>
+        <div class="col-md-2">
+            <label>Materiale</label>
+            <InputSelect class="form-select" @bind-Value="newItem.Material">
+                <option value="1">Plast</option>
+                <option value="2">Jern</option>
+            </InputSelect>
+        </div>
+        <div class="col-md-2">
+            <label>Størrelse (L)</label>
+            <InputNumber class="form-control" @bind-Value="newItem.SizeLiters" />
+        </div>
+        <div class="col-md-2">
+            <label>Ugentlig (kg)</label>
+            <InputNumber class="form-control" @bind-Value="newItem.WeeklyAmountKg" />
+        </div>
+        <div class="col-md-2">
+            <label>Seneste fyld %</label>
+            <InputNumber class="form-control" @bind-Value="newItem.LastFillPct" />
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-primary w-100" type="submit">Opret</button>
+        </div>
+    </div>
+</EditForm>
 
 @if (items is null)
 {
@@ -22,8 +59,8 @@ else
                 <th>Materiale</th>
                 <th>Størrelse (L)</th>
                 <th>Ugentlig (kg)</th>
-                <th>Seneste fyld %</th>
-                <th>Foreslået frekvens (dage)</th>
+                <th>Seneste fyld%</th>
+                <th>Anbefaling (dage)</th>
             </tr>
         </thead>
         <tbody>
@@ -36,7 +73,7 @@ else
                 <td>@c.SizeLiters</td>
                 <td>@c.WeeklyAmountKg</td>
                 <td>@(c.LastFillPct?.ToString("0") ?? "-")</td>
-                <td>@(c.PreferredPickupFrequencyDays?.ToString() ?? "–")</td>
+                <td>@RecText(c.Id)</td>
             </tr>
         }
         </tbody>
@@ -45,17 +82,69 @@ else
 
 @code {
     List<ContainerDto>? items;
+    Dictionary<int, RecDto> recs = new();
 
-    // VIGTIGT: Material er int (matcher API'ets enum-værdi 1/2)
+    // DTO'er (matcher API)
     public record ContainerDto(
         int Id, string Type, int SizeLiters, double WeeklyAmountKg,
         double? LastFillPct, DateTime? LastPickupDate,
         int? PreferredPickupFrequencyDays, int? CustomerId, int Material);
 
+    public record RecDto(double? AverageFillPct, int RecommendedFrequencyDays);
+
+    public class NewContainerDto
+    {
+        [Required] public string Type { get; set; } = string.Empty;
+        [Range(1, 2)] public int Material { get; set; } = 1; // 1=Plast, 2=Jern
+        [Range(1, int.MaxValue)] public int SizeLiters { get; set; } = 1000;
+        [Range(0, double.MaxValue)] public double WeeklyAmountKg { get; set; } = 0;
+        [Range(0, 100)] public double? LastFillPct { get; set; }
+        public int? PreferredPickupFrequencyDays { get; set; }
+    }
+
+    NewContainerDto newItem = new();
+
     protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        await LoadRecsAsync();
+    }
+
+    async Task LoadAsync()
     {
         items = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers") ?? new();
     }
 
+    async Task LoadRecsAsync()
+    {
+        recs.Clear();
+        foreach (var c in items!)
+        {
+            var r = await Http.GetFromJsonAsync<RecDto>($"api/containers/{c.Id}/recommendation");
+            if (r is not null) recs[c.Id] = r;
+            StateHasChanged(); // opdater efterhånden som de kommer ind
+        }
+    }
+
+    async Task CreateAsync()
+    {
+        var res = await Http.PostAsJsonAsync("api/containers", newItem);
+        if (res.IsSuccessStatusCode)
+        {
+            newItem = new();
+            await LoadAsync();
+            await LoadRecsAsync();
+        }
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"Create failed: {res.StatusCode} - {txt}");
+        }
+    }
+
     static string MaterialLabel(int m) => m switch { 1 => "Plast", 2 => "Jern", _ => m.ToString() };
+
+    string RecText(int id) => recs.TryGetValue(id, out var r)
+        ? $"{r.RecommendedFrequencyDays}"
+        : "…";
 }
