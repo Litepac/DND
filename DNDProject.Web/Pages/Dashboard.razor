@@ -4,7 +4,13 @@
 
 <h3 class="mb-3">Stena – Dashboard (pilot)</h3>
 
-@if (loading)
+@if (error is not null)
+{
+    <div class="alert alert-danger">
+        @error
+    </div>
+}
+else if (items is null)
 {
     <p>Henter data…</p>
 }
@@ -103,19 +109,37 @@ else
 }
 
 @code {
-    bool loading = true;
-    List<ContainerDto> items = new();
+    // --- data + fejltilstand ---
+    string? error;
+    List<ContainerDto>? items;
 
     public record ContainerDto(
         int Id, string Type, int SizeLiters, double WeeklyAmountKg,
         double? LastFillPct, DateTime? LastPickupDate,
         int? PreferredPickupFrequencyDays, int? CustomerId, int Material);
 
-    int count => items.Count;
-    double totalWeekly => items.Sum(c => c.WeeklyAmountKg);
-    double avgFill => items.Count == 0
-        ? 0
-        : items.Where(c => c.LastFillPct.HasValue).DefaultIfEmpty().Average(c => c?.LastFillPct ?? 0);
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            items = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers");
+        }
+        catch (Exception ex)
+        {
+            error = $"Kan ikke hente data fra API'et. Tjek at API kører og at base-URL er korrekt. ({ex.Message})";
+        }
+    }
+
+    // --- KPI'er/visning ---
+    int count => items?.Count ?? 0;
+    double totalWeekly => items?.Sum(c => c.WeeklyAmountKg) ?? 0;
+double avgFill => (items?.Count ?? 0) == 0
+    ? 0
+    : items!
+        .Where(c => c.LastFillPct.HasValue)
+        .DefaultIfEmpty()
+        .Average(c => c?.LastFillPct ?? 0);
+
 
     static int RecommendDays(double? lastFill) => lastFill switch
     {
@@ -124,26 +148,22 @@ else
         _   => 14
     };
 
-    int avgSuggestedDays => items.Count == 0 ? 0
-        : (int)Math.Round(items.Select(c => RecommendDays(c.LastFillPct)).Average());
+    int avgSuggestedDays => (items?.Count ?? 0) == 0 ? 0
+        : (int)Math.Round(items!.Select(c => RecommendDays(c.LastFillPct)).Average());
 
     record Row(ContainerDto C, int SuggestedDays);
 
     IEnumerable<Row> Underfilled() =>
-        items.Where(c => (c.LastFillPct ?? 0) < 50)
-             .OrderBy(c => c.LastFillPct ?? 0)
-             .Take(5)
-             .Select(c => new Row(c, RecommendDays(c.LastFillPct)));
+        (items ?? Enumerable.Empty<ContainerDto>())
+            .Where(c => (c.LastFillPct ?? 0) < 50)
+            .OrderBy(c => c.LastFillPct ?? 0)
+            .Take(5)
+            .Select(c => new Row(c, RecommendDays(c.LastFillPct)));
 
     IEnumerable<Row> Overfilled() =>
-        items.Where(c => (c.LastFillPct ?? 0) > 90)
-             .OrderByDescending(c => c.LastFillPct ?? 0)
-             .Take(5)
-             .Select(c => new Row(c, RecommendDays(c.LastFillPct)));
-
-    protected override async Task OnInitializedAsync()
-    {
-        items = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers") ?? new();
-        loading = false;
-    }
+        (items ?? Enumerable.Empty<ContainerDto>())
+            .Where(c => (c.LastFillPct ?? 0) > 90)
+            .OrderByDescending(c => c.LastFillPct ?? 0)
+            .Take(5)
+            .Select(c => new Row(c, RecommendDays(c.LastFillPct)));
 }
