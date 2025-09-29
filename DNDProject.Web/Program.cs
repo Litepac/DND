@@ -1,15 +1,34 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using DNDProject.Web;
+using System.Net.Http.Headers;
+using DNDProject.Web.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<DNDProject.Web.App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Peg på API'et (brug din API-port)
+// HttpClient peger på API
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("http://localhost:5230/")
+    BaseAddress = new Uri("http://localhost:5230/")  // API-port
 });
 
-await builder.Build().RunAsync();
+builder.Services.AddAuthorizationCore();
+
+// Token service
+builder.Services.AddScoped<TokenStorage>();
+
+// Læs token ved app-start og sæt Authorization-header
+var host = builder.Build();
+
+var tokens = host.Services.GetRequiredService<TokenStorage>();
+var http   = host.Services.GetRequiredService<HttpClient>();
+
+var existing = await tokens.GetAsync();
+if (!string.IsNullOrWhiteSpace(existing))
+{
+    http.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Bearer", existing);
+}
+
+await host.RunAsync();

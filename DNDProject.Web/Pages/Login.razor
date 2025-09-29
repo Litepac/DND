@@ -1,0 +1,108 @@
+@page "/login"
+@inject HttpClient Http
+@using System.Net.Http.Headers
+@inject DNDProject.Web.Services.TokenStorage Tokens
+
+<h3>Login</h3>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @alertClass">@message</div>
+}
+
+@if (saved)
+{
+    <div class="alert alert-secondary mb-3">Token er gemt i localStorage.</div>
+    <button class="btn btn-outline-secondary mb-3" @onclick="Logout" disabled="@busy">Log ud</button>
+}
+
+<EditForm Model="form" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Email</label>
+        <InputText class="form-control" @bind-Value="form.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label>Password</label>
+        <InputText class="form-control" type="password" @bind-Value="form.Password" />
+    </div>
+
+    <button class="btn btn-primary" disabled="@busy">Log ind</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(token))
+{
+    <hr />
+    <p><strong>Token:</strong></p>
+    <textarea readonly class="form-control" rows="5">@token</textarea>
+}
+
+@code {
+    class LoginRequest { public string Email { get; set; } = ""; public string Password { get; set; } = ""; }
+    class LoginResponse { public string Token { get; set; } = ""; public DateTime Expires { get; set; } }
+
+    // Default test-values (du kan bare trykke Log ind)
+    LoginRequest form = new() { Email = "admin@demo.local", Password = "Pass123!" };
+
+    string? message;
+    string alertClass = "alert-info";
+    string? token;
+    bool busy;
+    bool saved;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var t = await Tokens.GetAsync();
+        saved = !string.IsNullOrWhiteSpace(t);
+    }
+
+    async Task HandleLogin()
+    {
+        busy = true; message = null; token = null; alertClass = "alert-info";
+        try
+        {
+            var resp = await Http.PostAsJsonAsync("api/auth/login", form);
+            if (!resp.IsSuccessStatusCode)
+            {
+                message = $"Login fejlede ({(int)resp.StatusCode}).";
+                alertClass = "alert-danger";
+                return;
+            }
+
+            var data = await resp.Content.ReadFromJsonAsync<LoginResponse>();
+            token = data?.Token;
+
+            // GEM token og sæt Authorization-header
+            await Tokens.SaveAsync(token!);
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            saved = true;
+            message = "Login OK – token gemt.";
+            alertClass = "alert-success";
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+            alertClass = "alert-danger";
+        }
+        finally { busy = false; }
+    }
+
+    async Task Logout()
+    {
+        busy = true;
+        try
+        {
+            await Tokens.ClearAsync();
+            Http.DefaultRequestHeaders.Authorization = null;
+            token = null;
+            saved = false;
+            message = "Logget ud.";
+            alertClass = "alert-info";
+        }
+        finally { busy = false; }
+    }
+}
