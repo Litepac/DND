@@ -24,4 +24,14 @@ public class ContainersController : ControllerBase
         var c = await _db.Containers.FindAsync(id);
         return c is null ? NotFound() : c;
     }
+
+    // POST: api/containers
+    [HttpPost]
+    [Consumes("application/json")]
+    public async Task<ActionResult<Container>> Create([FromBody] Container input)
+    {
+        _db.Containers.Add(input);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetById), new { id = input.Id }, input);
+    }
 }
