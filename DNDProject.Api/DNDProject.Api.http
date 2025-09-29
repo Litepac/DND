@@ -1,6 +1,22 @@
-@DNDProject.Api_HostAddress = http://localhost:5230
+@host = http://localhost:5230
 
-GET {{DNDProject.Api_HostAddress}}/weatherforecast/
+### Get all containers
+GET {{host}}/api/containers
 Accept: application/json
 
-###
+### Get container by id
+GET {{host}}/api/containers/1
+Accept: application/json
+
+### Create container (example)
+POST {{host}}/api/containers
+Content-Type: application/json
+
+{
+  "type": "Test",
+  "material": 1,
+  "sizeLiters": 1000,
+  "weeklyAmountKg": 50,
+  "lastFillPct": 42,
+  "preferredPickupFrequencyDays": 14
+}
