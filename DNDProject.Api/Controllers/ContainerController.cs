@@ -34,6 +34,19 @@ public class ContainersController : ControllerBase
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = input.Id }, input);
     }
+
+    // DELETE: api/containers/{id}
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var c = await _db.Containers.FindAsync(id);
+        if (c is null) return NotFound();
+
+        _db.Containers.Remove(c);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // GET: api/containers/{id}/recommendation
     [HttpGet("{id:int}/recommendation")]
     public async Task<IActionResult> Recommendation(int id)
@@ -41,12 +54,8 @@ public class ContainersController : ControllerBase
         var c = await _db.Containers.FindAsync(id);
         if (c is null) return NotFound();
 
-    // Simpel fyld%
-    var avg = c.LastFillPct ?? 70;
-    var recDays = avg > 90 ? 7 : avg < 50 ? 21 : 14;
-
-    return Ok(new { averageFillPct = avg, recommendedFrequencyDays = recDays });
+        var avg = c.LastFillPct ?? 70;
+        var recDays = avg > 90 ? 7 : avg < 50 ? 21 : 14;
+        return Ok(new { averageFillPct = avg, recommendedFrequencyDays = recDays });
+    }
 }
-}
-
-
