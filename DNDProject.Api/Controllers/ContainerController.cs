@@ -2,6 +2,7 @@ using DNDProject.Api.Data;
 using DNDProject.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DNDProject.Api.Controllers;
 
