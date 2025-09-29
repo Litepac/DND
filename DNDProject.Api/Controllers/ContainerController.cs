@@ -58,4 +58,24 @@ public class ContainersController : ControllerBase
         var recDays = avg > 90 ? 7 : avg < 50 ? 21 : 14;
         return Ok(new { averageFillPct = avg, recommendedFrequencyDays = recDays });
     }
+    // PUT: api/containers/{id}
+    [HttpPut("{id:int}")]
+    [Consumes("application/json")]
+    public async Task<IActionResult> Update(int id, [FromBody] Container input)
+    {
+        var c = await _db.Containers.FindAsync(id);
+        if (c is null) return NotFound();
+        c.Type = input.Type;
+        c.Material = input.Material;
+        c.SizeLiters = input.SizeLiters;
+        c.WeeklyAmountKg = input.WeeklyAmountKg;
+        c.LastFillPct = input.LastFillPct;
+        c.LastPickupDate = input.LastPickupDate;
+        c.PreferredPickupFrequencyDays = input.PreferredPickupFrequencyDays;
+        c.CustomerId = input.CustomerId;
+    await _db.SaveChangesAsync();
+    return NoContent();
+}
+
+
 }

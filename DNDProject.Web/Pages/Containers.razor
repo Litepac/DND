@@ -62,25 +62,49 @@ else
                 <th>Ugentlig (kg)</th>
                 <th>Seneste fyld%</th>
                 <th>Anbefaling (dage)</th>
-                <th></th> @* handlinger *@
+                <th style="width:160px"></th>
             </tr>
         </thead>
         <tbody>
         @foreach (var c in items)
         {
-            <tr>
-                <td>@c.Id</td>
-                <td>@c.Type</td>
-                <td>@MaterialLabel(c.Material)</td>
-                <td>@c.SizeLiters</td>
-                <td>@c.WeeklyAmountKg</td>
-                <td>@(c.LastFillPct?.ToString("0") ?? "-")</td>
-                <td>@RecText(c.Id)</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger"
-                            @onclick="() => DeleteAsync(c.Id)">Slet</button>
-                </td>
-            </tr>
+            if (editingId == c.Id)
+            {
+                <tr>
+                    <td>@c.Id</td>
+                    <td><InputText class="form-control form-control-sm" @bind-Value="edit.Type" /></td>
+                    <td>
+                        <InputSelect class="form-select form-select-sm" @bind-Value="edit.Material">
+                            <option value="1">Plast</option>
+                            <option value="2">Jern</option>
+                        </InputSelect>
+                    </td>
+                    <td><InputNumber class="form-control form-control-sm" @bind-Value="edit.SizeLiters" /></td>
+                    <td><InputNumber class="form-control form-control-sm" @bind-Value="edit.WeeklyAmountKg" /></td>
+                    <td><InputNumber class="form-control form-control-sm" @bind-Value="edit.LastFillPct" /></td>
+                    <td class="text-muted">—</td>
+                    <td>
+                        <button class="btn btn-sm btn-success me-1" @onclick="SaveEditAsync">Gem</button>
+                        <button class="btn btn-sm btn-secondary" @onclick="CancelEdit">Annuller</button>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                <tr>
+                    <td>@c.Id</td>
+                    <td>@c.Type</td>
+                    <td>@MaterialLabel(c.Material)</td>
+                    <td>@c.SizeLiters</td>
+                    <td>@c.WeeklyAmountKg</td>
+                    <td>@(c.LastFillPct?.ToString("0") ?? "-")</td>
+                    <td>@RecText(c.Id)</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => BeginEdit(c)">Redigér</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(c.Id)">Slet</button>
+                    </td>
+                </tr>
+            }
         }
         </tbody>
     </table>
@@ -90,7 +114,7 @@ else
     List<ContainerDto>? items;
     Dictionary<int, RecDto> recs = new();
 
-    // DTO'er (matcher API)
+    // Positional records matcher API'ets JSON (Material = int enumværdi)
     public record ContainerDto(
         int Id, string Type, int SizeLiters, double WeeklyAmountKg,
         double? LastFillPct, DateTime? LastPickupDate,
@@ -101,14 +125,27 @@ else
     public class NewContainerDto
     {
         [Required] public string Type { get; set; } = string.Empty;
-        [Range(1, 2)] public int Material { get; set; } = 1; // 1=Plast, 2=Jern
+        [Range(1, 2)] public int Material { get; set; } = 1;
         [Range(1, int.MaxValue)] public int SizeLiters { get; set; } = 1000;
         [Range(0, double.MaxValue)] public double WeeklyAmountKg { get; set; } = 0;
         [Range(0, 100)] public double? LastFillPct { get; set; }
         public int? PreferredPickupFrequencyDays { get; set; }
     }
 
+    public class EditContainerDto
+    {
+        public int Id { get; set; }
+        [Required] public string Type { get; set; } = string.Empty;
+        [Range(1, 2)] public int Material { get; set; }
+        [Range(1, int.MaxValue)] public int SizeLiters { get; set; }
+        [Range(0, double.MaxValue)] public double WeeklyAmountKg { get; set; }
+        [Range(0, 100)] public double? LastFillPct { get; set; }
+        public int? PreferredPickupFrequencyDays { get; set; }
+    }
+
     NewContainerDto newItem = new();
+    int? editingId;
+    EditContainerDto edit = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -143,14 +180,64 @@ else
         }
         else
         {
-            var txt = await res.Content.ReadAsStringAsync();
-            Console.Error.WriteLine($"Create failed: {res.StatusCode} - {txt}");
+            Console.Error.WriteLine($"Create failed: {res.StatusCode}");
+        }
+    }
+
+    void BeginEdit(ContainerDto c)
+    {
+        editingId = c.Id;
+        edit = new EditContainerDto
+        {
+            Id = c.Id,
+            Type = c.Type,
+            Material = c.Material,
+            SizeLiters = c.SizeLiters,
+            WeeklyAmountKg = c.WeeklyAmountKg,
+            LastFillPct = c.LastFillPct,
+            PreferredPickupFrequencyDays = c.PreferredPickupFrequencyDays
+        };
+    }
+
+    void CancelEdit() => editingId = null;
+
+    async Task SaveEditAsync()
+    {
+        if (editingId is null) return;
+
+        var res = await Http.PutAsJsonAsync($"api/containers/{editingId}", edit);
+        if (res.IsSuccessStatusCode)
+        {
+            // opdatér i listen uden reload
+            var i = items!.FindIndex(x => x.Id == editingId);
+            if (i >= 0)
+            {
+                items![i] = items![i] with
+                {
+                    Type = edit.Type,
+                    Material = edit.Material,
+                    SizeLiters = edit.SizeLiters,
+                    WeeklyAmountKg = edit.WeeklyAmountKg,
+                    LastFillPct = edit.LastFillPct,
+                    PreferredPickupFrequencyDays = edit.PreferredPickupFrequencyDays
+                };
+            }
+
+            // hent ny anbefaling for den redigerede
+            var r = await Http.GetFromJsonAsync<RecDto>($"api/containers/{editingId}/recommendation");
+            if (r is not null) recs[editingId.Value] = r;
+
+            editingId = null;
+            StateHasChanged();
+        }
+        else
+        {
+            Console.Error.WriteLine($"Update failed: {res.StatusCode}");
         }
     }
 
     async Task DeleteAsync(int id)
     {
-        // lille confirm
         if (!await JS.InvokeAsync<bool>("confirm", $"Slet container #{id}?")) return;
 
         var res = await Http.DeleteAsync($"api/containers/{id}");
@@ -161,16 +248,8 @@ else
             recs.Remove(id);
             StateHasChanged();
         }
-        else
-        {
-            var txt = await res.Content.ReadAsStringAsync();
-            Console.Error.WriteLine($"Delete failed: {res.StatusCode} - {txt}");
-        }
     }
 
     static string MaterialLabel(int m) => m switch { 1 => "Plast", 2 => "Jern", _ => m.ToString() };
-
-    string RecText(int id) => recs.TryGetValue(id, out var r)
-        ? $"{r.RecommendedFrequencyDays}"
-        : "…";
+    string RecText(int id) => recs.TryGetValue(id, out var r) ? $"{r.RecommendedFrequencyDays}" : "…";
 }
