@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,12 +25,34 @@ builder.Services.AddCors(opt =>
         .AllowAnyMethod());
 });
 
-// Swagger
+// Swagger + JWT-knap
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "DNDProject API", Version = "v1" });
 
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Indsæt JWT token her (uden 'Bearer ' foran).",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = "Bearer"
+        }
+    };
+    c.AddSecurityDefinition("Bearer", securityScheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { securityScheme, Array.Empty<string>() }
+    });
+});
 
-// Identity (brugere/roller) via EF
+// Identity
 builder.Services
     .AddIdentityCore<ApplicationUser>(opt =>
     {
@@ -42,9 +65,14 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager();
 
-// JWT config (nøgler hentes fra appsettings.json -> "Jwt")
+// JWT config (midlertidigt: kun signaturvalidering)
 var jwt = builder.Configuration.GetSection("Jwt");
-var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
+var issuer = jwt["Issuer"]!;
+var audience = jwt["Audience"]!;
+var keyStr = jwt["Key"]!;
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
+
+Console.WriteLine($"[JWT Config] Issuer={issuer}, Audience={audience}, KeyLen={keyStr.Length}");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -55,9 +83,27 @@ builder.Services
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwt["Issuer"],
-            ValidAudience = jwt["Audience"],
-            IssuerSigningKey = key
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = key,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero // stram op, så vi ikke får falsk-positiv
+        };
+
+        // Debug events – giver dig årsagen i konsollen
+        opt.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                Console.WriteLine("[JWT] Authentication failed: " + ctx.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = ctx =>
+            {
+                Console.WriteLine("[JWT] Token OK: " +
+                    string.Join(", ", ctx.Principal!.Claims.Select(c => $"{c.Type}={c.Value}")));
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -72,11 +118,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-
-// VIGTIGT: auth før MapControllers
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// seed brugere/roller
 await IdentitySeed.SeedAsync(app.Services);
+
 app.Run();

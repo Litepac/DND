@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Linq;
 using DNDProject.Api.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -56,17 +58,16 @@ public class AuthController : ControllerBase
     // ---------- GET /api/auth/ping-protected ----------
     // Lille test-endpoint så du kan se at token virker i Swagger
     [HttpGet("ping-protected")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public IActionResult PingProtected()
-        {
+    {
         var email = User.Identity?.Name ?? "(ukendt)";
         var roles = User.Claims
-                    .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-                    .Select(c => c.Value);
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value);
 
-    return Ok(new { message = "OK", email, roles });
-}
-
+        return Ok(new { message = "OK", email, roles });
+    }
 
     // ---------- Helper: byg JWT ----------
     private async Task<(string token, DateTime expires, IEnumerable<string> roles, int? customerId)>
@@ -74,22 +75,22 @@ public class AuthController : ControllerBase
     {
         var jwtSection = _cfg.GetSection("Jwt");
 
-        var issuer = jwtSection["Issuer"] ?? throw new InvalidOperationException("Missing Jwt:Issuer");
+        var issuer   = jwtSection["Issuer"]   ?? throw new InvalidOperationException("Missing Jwt:Issuer");
         var audience = jwtSection["Audience"] ?? throw new InvalidOperationException("Missing Jwt:Audience");
-        var keyStr = jwtSection["Key"] ?? throw new InvalidOperationException("Missing Jwt:Key");
+        var keyStr   = jwtSection["Key"]      ?? throw new InvalidOperationException("Missing Jwt:Key");
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
+        var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var roles = await _userManager.GetRolesAsync(user);
 
         var claims = new List<Claim>
-    {
-        new(JwtRegisteredClaimNames.Sub, user.Email ?? user.UserName ?? user.Id),
-        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new(ClaimTypes.NameIdentifier, user.Id),
-        new(ClaimTypes.Name, user.Email ?? user.UserName ?? "")
-    };
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Email ?? user.UserName ?? user.Id),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Name, user.Email ?? user.UserName ?? string.Empty)
+        };
 
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
@@ -110,7 +111,7 @@ public class AuthController : ControllerBase
 
         var handler = new JwtSecurityTokenHandler();
         var securityToken = handler.CreateToken(descriptor);
-        string tokenString = handler.WriteToken(securityToken);
+        var tokenString = handler.WriteToken(securityToken);
 
         return (tokenString, expires, roles, customerId);
     }
