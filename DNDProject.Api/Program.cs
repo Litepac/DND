@@ -13,7 +13,18 @@ builder.Services.AddControllers();
 // (valgfrit) ny .NET OpenAPI – giver kun JSON på /openapi/v1.json
 builder.Services.AddOpenApi();
 
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
+
+// Swagger kun i Development
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 if (app.Environment.IsDevelopment())
 {
