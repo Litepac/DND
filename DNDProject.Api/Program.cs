@@ -3,14 +3,20 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core + SQLite (bruger "Default" fra appsettings.json)
+// EF Core + SQLite
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 // Controllers
 builder.Services.AddControllers();
 
-// Swagger (til udvikling/test)
+// CORS (tillad Blazor at kalde API’et i dev)
+builder.Services.AddCors(opt =>
+{
+    opt.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
+// Swagger (kun til udvikling)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -23,5 +29,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.MapControllers();
+app.UseCors();          // <-- vigtigt for WASM
+app.MapControllers();   // <-- hører til API’et
+
 app.Run();

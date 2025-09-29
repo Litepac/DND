@@ -1,0 +1,27 @@
+@page "/api-ping"
+@inject HttpClient Http
+
+<h3>API Ping</h3>
+
+@if (count is null)
+{
+    <p>Henter...</p>
+}
+else
+{
+    <p>Containers i API: <b>@count</b></p>
+}
+
+@code {
+    int? count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var list = await Http.GetFromJsonAsync<List<ContainerDto>>("api/containers");
+        count = list?.Count ?? 0;
+    }
+
+    public record ContainerDto(
+        int Id, string Type, int SizeLiters, double WeeklyAmountKg,
+        double? LastFillPct, int? PreferredPickupFrequencyDays, string Material);
+}
