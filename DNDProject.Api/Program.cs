@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Microsoft.IdentityModel.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,47 +68,71 @@ builder.Services
 
 // JWT config (midlertidigt: kun signaturvalidering)
 var jwt = builder.Configuration.GetSection("Jwt");
-var issuer = jwt["Issuer"]!;
-var audience = jwt["Audience"]!;
-var keyStr = jwt["Key"]!;
-var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
-
-Console.WriteLine($"[JWT Config] Issuer={issuer}, Audience={audience}, KeyLen={keyStr.Length}");
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
+        // Vis detaljerede fejl (KUN i udvikling)
+        IdentityModelEventSource.ShowPII = true;
+
         opt.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = issuer,
-            ValidAudience = audience,
-            IssuerSigningKey = key,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero // stram op, så vi ikke får falsk-positiv
+            ValidIssuer = jwt["Issuer"],
+            ValidAudience = jwt["Audience"],
+            IssuerSigningKey = key
         };
 
-        // Debug events – giver dig årsagen i konsollen
+        // Ekstra log – viser præcis hvad der kommer ind,
+        // trimmer evt. tegn og logger fejlbeskeden.
         opt.Events = new JwtBearerEvents
         {
+            OnMessageReceived = ctx =>
+            {
+                var logger = ctx.HttpContext.RequestServices
+                               .GetRequiredService<ILoggerFactory>()
+                               .CreateLogger("JWT");
+
+                var rawAuth = ctx.Request.Headers["Authorization"].ToString();
+                logger.LogInformation("Authorization header modtaget: {auth}", rawAuth);
+
+                // Trim "Bearer " + evt. anførselstegn/whitespace
+                if (!string.IsNullOrWhiteSpace(rawAuth) &&
+                    rawAuth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Token = rawAuth.Substring("Bearer ".Length).Trim().Trim('"');
+                }
+
+                return Task.CompletedTask;
+            },
             OnAuthenticationFailed = ctx =>
             {
-                Console.WriteLine("[JWT] Authentication failed: " + ctx.Exception.Message);
+                var logger = ctx.HttpContext.RequestServices
+                               .GetRequiredService<ILoggerFactory>()
+                               .CreateLogger("JWT");
+
+                logger.LogError(ctx.Exception, "JWT authentication failed: {msg}", ctx.Exception.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = ctx =>
             {
-                Console.WriteLine("[JWT] Token OK: " +
-                    string.Join(", ", ctx.Principal!.Claims.Select(c => $"{c.Type}={c.Value}")));
+                var logger = ctx.HttpContext.RequestServices
+                               .GetRequiredService<ILoggerFactory>()
+                               .CreateLogger("JWT");
+
+                logger.LogInformation("JWT token er valideret for {sub}",
+                    ctx.Principal?.Identity?.Name);
                 return Task.CompletedTask;
             }
         };
     });
 
 builder.Services.AddAuthorization();
+
 
 var app = builder.Build();
 
