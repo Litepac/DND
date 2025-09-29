@@ -12,3 +12,4 @@ Implementeret blazor osv
 
 Møde om webservices.
 Sat containers op, CURS op, testet ApiPing og diverse andre ting.
+Sat UI på, database opdateret, samt kigget på absurd mange ting.
