@@ -2,19 +2,26 @@ using Microsoft.JSInterop;
 
 namespace DNDProject.Web.Services;
 
-public class TokenStorage
+public interface ITokenStorage
+{
+    Task SaveAsync(string token);
+    Task<string?> GetAsync();
+    Task ClearAsync();
+}
+
+public sealed class TokenStorage : ITokenStorage
 {
     private readonly IJSRuntime _js;
-    private const string Key = "authToken";
+    private const string Key = "auth_token";
 
     public TokenStorage(IJSRuntime js) => _js = js;
 
-    public ValueTask SaveAsync(string token) =>
-        _js.InvokeVoidAsync("localStorage.setItem", Key, token);
+    public Task SaveAsync(string token) =>
+        _js.InvokeVoidAsync("localStorage.setItem", Key, token).AsTask();
 
-    public ValueTask<string?> GetAsync() =>
-        _js.InvokeAsync<string?>("localStorage.getItem", Key);
+    public Task<string?> GetAsync() =>
+        _js.InvokeAsync<string?>("localStorage.getItem", Key).AsTask();
 
-    public ValueTask ClearAsync() =>
-        _js.InvokeVoidAsync("localStorage.removeItem", Key);
+    public Task ClearAsync() =>
+        _js.InvokeVoidAsync("localStorage.removeItem", Key).AsTask();
 }
