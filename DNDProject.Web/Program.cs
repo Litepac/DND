@@ -17,6 +17,12 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<ITokenStorage, TokenStorage>();
 builder.Services.AddScoped<TokenAuthorizationMessageHandler>();
 
+// Læs API-baseadresse fra config
+var apiBaseAddress =
+    builder.Configuration["Api:BaseAddress"] ??
+    Environment.GetEnvironmentVariable("Api__BaseAddress") ??
+    "http://localhost:5230";
+
 // Navngiven HttpClient til API'et (med handleren der sætter Authorization-header)
 builder.Services.AddHttpClient("Api", client =>
 {
@@ -24,7 +30,7 @@ builder.Services.AddHttpClient("Api", client =>
 })
 .AddHttpMessageHandler<TokenAuthorizationMessageHandler>();
 
-// Standard HttpClient -> brug den navngivne "Api"
+// Standard HttpClient -> brug den navngivne Api
 builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api"));
 

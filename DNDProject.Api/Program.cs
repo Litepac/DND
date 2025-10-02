@@ -17,7 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(o =>
 // Controllers
 builder.Services.AddControllers();
 
-// CORS (åben i dev – stram til senere)
+// CORS (åben i dev)
 builder.Services.AddCors(opt =>
 {
     opt.AddDefaultPolicy(p => p
