@@ -48,9 +48,3 @@ dotnet run
 ~~~
 
 Web skriver selv adressen i konsollen (typisk noget som `http://localhost:5122/`). Åbn den i browseren.
-
-### Stop apps
-
-Tryk `Ctrl + C` i den terminal, hvor app’en kører.
-
----
