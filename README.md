@@ -15,6 +15,7 @@ Tjek version:
 
 ~~~bash
 dotnet --version
+- det kan være den kun viser version 10.0, men når man har downloadet 8.0 virker det.
 ~~~
 
 ---
