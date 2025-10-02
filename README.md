@@ -1,11 +1,56 @@
 # DND Projekt
 
-Gruppe bestående af:
+**Gruppe:**
 
-Oliver Rolighed (OliRolig)
+- Oliver Rolighed (OliRolig)
+- Oliver Hyllested (Olihylle)
+- Sebastian Højland (Sebastianhoejland)
+- Rasmus Møller (Litepac aka the goat)
 
-Oliver Hyllested (Olihylle)
+## SystemKrav
 
-Sebastian Højland (Sebastianhoejland)
+- **.NET 8 SDK**
 
-Rasmus Møller (Litepac)
+Tjek version:
+
+~~~bash
+dotnet --version
+~~~
+
+---
+
+## Start projektet lokalt
+
+Åbn **to terminaler** i repoets rodkatalog — start altid **API’en først**.
+
+### 1) API – ASP.NET Core API (SQLite)
+
+~~~bash
+cd DNDProject.Api
+dotnet clean
+dotnet restore
+dotnet build
+dotnet run
+~~~
+
+Når API’en er startet, skriver den adressen i konsollen (typisk `http://localhost:5230/`).
+
+### 2) WEB – Blazor WebAssembly Frontend
+
+Åbn en **ny** terminal:
+
+~~~bash
+cd DNDProject.Web
+dotnet clean
+dotnet restore
+dotnet build
+dotnet run
+~~~
+
+Web skriver selv adressen i konsollen (typisk noget som `http://localhost:5122/`). Åbn den i browseren.
+
+### Stop apps
+
+Tryk `Ctrl + C` i den terminal, hvor app’en kører.
+
+---
